@@ -15,20 +15,28 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
-header{width:100%;max-width:560px;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header{width:100%;max-width:560px;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:6px 12px;flex-wrap:wrap}
+h1,.stats span{white-space:nowrap}
+@media (max-width:440px){h1{font-size:1.1rem}.stats{gap:10px;font-size:.88rem}}
 h1{font-size:1.25rem;margin:0;letter-spacing:.02em}
 h1 span{color:var(--accent)}
 .stats{display:flex;gap:14px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.95rem}
 .stats b{color:var(--text)}
+.stats .clock b{color:var(--accent)}
+.stats .clock.low b{color:var(--bad)}
 main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
 .cover{position:relative;width:100%;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;background:var(--panel);box-shadow:0 10px 40px #0008}
-.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.15);will-change:filter,transform;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.cover img,.cover canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.cover img{transform:scale(1.15);will-change:filter,transform}
+.cover canvas{image-rendering:pixelated;image-rendering:crisp-edges}
 .cover.revealed img{filter:none!important;transform:scale(1);transition:filter .5s,transform .5s}
+.cover.revealed canvas{display:none}
 .cover .loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
 .bar{height:6px;background:var(--panel2);border-radius:3px;margin:14px 0;overflow:hidden}
 .bar div{height:100%;width:100%;background:var(--accent);transform-origin:left;transform:scaleX(1)}
 .potential{text-align:center;color:var(--muted);font-size:.9rem;margin:-6px 0 12px;font-variant-numeric:tabular-nums}
 .potential b{color:var(--accent)}
+.potential i{font-style:normal;margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--panel2);color:var(--text);font-size:.8rem}
 .options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:420px){.options{grid-template-columns:1fr}}
 .opt{background:var(--panel);color:var(--text);border:2px solid var(--panel2);border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;min-height:64px;transition:background .15s,border-color .15s,transform .05s}
@@ -45,32 +53,67 @@ main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
 .result.ok{color:var(--ok)} .result.bad{color:var(--bad)}
 .btn{display:block;margin:12px auto 0;background:var(--accent);color:#1a1200;border:0;border-radius:999px;padding:12px 28px;font:inherit;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.6;cursor:wait}
 .hidden{display:none!important}
 .screen{background:var(--panel);border-radius:var(--radius);padding:28px 22px;text-align:center}
 .screen h2{margin:0 0 8px;font-size:1.6rem}
 .screen p{color:var(--muted);margin:8px 0}
 .big{font-size:3rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;margin:8px 0}
-.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:16px 0}
-.summary img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:3px solid var(--bad)}
-.summary img.ok{border-color:var(--ok)}
-.modes{display:inline-flex;background:var(--bg);border-radius:999px;padding:4px;margin:16px 0 4px;gap:4px}
-.mode{background:none;border:0;color:var(--muted);font:inherit;padding:8px 16px;border-radius:999px;cursor:pointer}
-.mode.active{background:var(--panel2);color:var(--text);font-weight:600}
+.modes,.seg{display:inline-flex;flex-wrap:wrap;background:var(--bg);border-radius:999px;padding:4px;gap:4px}
+.modes{margin:16px 0 4px}
+.mode,.seg button{background:none;border:0;color:var(--muted);font:inherit;padding:8px 16px;border-radius:999px;cursor:pointer}
+.seg button{padding:6px 12px;font-size:.88rem}
+.mode.active,.seg button.active{background:var(--panel2);color:var(--text);font-weight:600}
 .lf{display:grid;gap:10px;max-width:320px;margin:12px auto 0;text-align:left}
-.lf label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
+.lf label,.set label,.set .lbl{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
 .lf input,.lf select{background:var(--bg);color:var(--text);border:2px solid var(--panel2);border-radius:10px;padding:10px 12px;font:inherit;width:100%}
 .lf input:focus,.lf select:focus{outline:none;border-color:var(--accent)}
 .err{color:var(--bad)!important;min-height:1.2em}
-.btn:disabled{opacity:.6;cursor:wait}
+details.settings{margin:16px auto 0;max-width:420px;text-align:left;background:var(--bg);border-radius:12px;padding:4px 14px}
+details.settings summary{cursor:pointer;padding:10px 0;color:var(--text);font-weight:600;list-style:none}
+details.settings summary::-webkit-details-marker{display:none}
+details.settings summary::before{content:"⚙️ "}
+details.settings summary span{float:right;color:var(--muted);font-weight:400;font-size:.8rem;margin-top:2px}
+.set{display:grid;gap:14px;padding:4px 0 14px}
+.set .row{display:flex;justify-content:space-between;gap:8px}
+.set .row b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+.set input[type=range]{width:100%;accent-color:var(--accent)}
+.set .ends{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:-2px}
+.summary{display:grid;gap:6px;margin:16px 0;text-align:left}
+.srow{display:grid;grid-template-columns:60px 1fr auto;gap:10px;align-items:center;background:var(--bg);border-radius:10px;padding:6px;border-left:4px solid var(--bad)}
+.srow.ok{border-left-color:var(--ok)}
+.srow img{width:60px;height:60px;object-fit:cover;border-radius:6px;display:block}
+.srow .t{min-width:0}
+.srow .t strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem}
+.srow .t small{display:block;color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .m{text-align:right;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.srow .m b{display:block;font-size:1rem;color:var(--ok)}
+.srow .t .meta{font-variant-numeric:tabular-nums;margin-top:1px;white-space:normal}
+.srow:not(.ok) .m b{color:var(--bad)}
 footer{color:var(--muted);font-size:.8rem;padding:16px;text-align:center}
 footer a{color:var(--muted)}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="frost" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence id="frostNoise" type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="1" result="n"/>
+    <feDisplacementMap id="frostMap" in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="poster" color-interpolation-filters="sRGB">
+    <feComponentTransfer>
+      <feFuncR class="pf" type="discrete" tableValues="0 1"/>
+      <feFuncG class="pf" type="discrete" tableValues="0 1"/>
+      <feFuncB class="pf" type="discrete" tableValues="0 1"/>
+    </feComponentTransfer>
+  </filter>
+</svg>
+
 <header>
   <h1>Carátulas <span>Difusas</span></h1>
   <div class="stats">
-    <span>Ronda <b id="round">0</b>/<b id="total">10</b></span>
+    <span id="roundStat">Ronda <b id="round">0</b><span id="ofTotal">/<b id="total">10</b></span></span>
+    <span id="clockStat" class="clock hidden">⏱ <b id="clock">0:00</b></span>
     <span>Puntos <b id="score">0</b></span>
   </div>
 </header>
@@ -78,8 +121,8 @@ footer a{color:var(--muted)}
 <main>
   <section id="start" class="screen">
     <h2>💿 ¿Qué disco es?</h2>
-    <p>La portada empieza muy difuminada y se va aclarando poco a poco.</p>
-    <p>Cuanto antes aciertes entre las 4 opciones, más puntos. Si fallas, 0.</p>
+    <p>La portada empieza irreconocible y se va aclarando poco a poco.</p>
+    <p>Cuanto antes aciertes entre las 4 opciones, más puntos. Si fallas o se acaba el tiempo, cuenta como fallo.</p>
     <p>Teclas <b>1–4</b> para responder, <b>Enter</b> para seguir.</p>
     <div class="modes">
       <button class="mode active" data-mode="classic">Discos clásicos</button>
@@ -98,15 +141,56 @@ footer a{color:var(--muted)}
         </select>
       </label>
     </form>
+
+    <details class="settings" id="settings">
+      <summary>Ajustes <span id="setSummary"></span></summary>
+      <div class="set">
+        <div class="lbl">Efecto
+          <div class="seg" id="effectSeg">
+            <button data-v="blur">Desenfoque</button>
+            <button data-v="frost">Esmerilado</button>
+            <button data-v="pixel">Píxeles</button>
+            <button data-v="bits">Bits</button>
+          </div>
+        </div>
+        <label><span class="row">Intensidad del efecto <b id="vIntensity"></b></span>
+          <input type="range" id="sIntensity" min="1" max="10" step="1">
+          <span class="ends"><span>Suave</span><span>Brutal</span></span>
+        </label>
+        <label><span class="row">Tiempo por portada <b id="vRoundTime"></b></span>
+          <input type="range" id="sRoundTime" min="5" max="60" step="1">
+        </label>
+        <div class="lbl">Tipo de partida
+          <div class="seg" id="gameSeg">
+            <button data-v="rounds">Por rondas</button>
+            <button data-v="clock">Contrarreloj</button>
+          </div>
+        </div>
+        <label id="rowRounds"><span class="row">Número de rondas <b id="vRounds"></b></span>
+          <input type="range" id="sRounds" min="3" max="50" step="1">
+        </label>
+        <label id="rowTotal"><span class="row">Tiempo total <b id="vTotal"></b></span>
+          <input type="range" id="sTotal" min="30" max="600" step="15">
+        </label>
+        <label><span class="row">Penalización por fallo o tiempo agotado <b id="vPenalty"></b></span>
+          <input type="range" id="sPenalty" min="0" max="1000" step="50">
+        </label>
+        <label id="rowWeight"><span class="row">Premio según escuchas <b id="vWeight"></b></span>
+          <input type="range" id="sWeight" min="-100" max="100" step="10">
+          <span class="ends"><span>← más a los menos escuchados</span><span>más a los más escuchados →</span></span>
+        </label>
+      </div>
+    </details>
+
     <p id="best"></p>
     <p id="err" class="err"></p>
     <button class="btn" id="startBtn">Jugar</button>
   </section>
 
   <section id="game" class="hidden">
-    <div class="cover" id="cover"><div class="loading" id="loading">Cargando…</div><img id="img" alt=""></div>
+    <div class="cover" id="cover"><div class="loading" id="loading">Cargando…</div><img id="img" alt=""><canvas id="cv" class="hidden"></canvas></div>
     <div class="bar"><div id="bar"></div></div>
-    <div class="potential">Puntos en juego: <b id="potential">1000</b></div>
+    <div class="potential">Puntos en juego: <b id="potential">1000</b><i id="mult" class="hidden"></i></div>
     <div class="options" id="options"></div>
     <div class="result" id="result"></div>
     <button class="btn hidden" id="nextBtn">Siguiente</button>
@@ -118,53 +202,151 @@ footer a{color:var(--muted)}
     <p id="endMsg"></p>
     <div class="summary" id="summary"></div>
     <button class="btn" id="againBtn">Otra partida</button>
+    <button class="btn" id="menuBtn" style="background:var(--panel2);color:var(--text)">Cambiar ajustes</button>
   </section>
 </main>
 
-<footer>Portadas vía iTunes Search API · <a href="https://github.com/volteret4/caratulas_difusas">código</a></footer>
+<footer>Portadas vía iTunes Search API y Last.fm · <a href="https://github.com/volteret4/caratulas_difusas">código</a></footer>
 
 <script>
-const ROUNDS = 10;          // rondas por partida
-const DURATION = 20000;     // ms hasta que la portada queda nítida
-const MAX_BLUR = 45;        // px de desenfoque inicial
 const MAX_POINTS = 1000, MIN_POINTS = 100;
 const LASTFM_API_KEY = "de2f8bfff3ddd42fb7fc1c47ccfa945a";
 const LF_PLACEHOLDER = "2a96cbd8b46e442fc41c2b86b821562f"; // imagen "sin portada" de Last.fm
+const DEFAULTS = { effect: "blur", intensity: 5, roundTime: 20, game: "rounds", rounds: 10, total: 120, penalty: 0, weight: 0 };
+const EFFECT_NAMES = { blur: "Desenfoque", frost: "Esmerilado", pixel: "Píxeles", bits: "Bits" };
 
 const $ = id => document.getElementById(id);
-let albums = [], pool = [], deck = [], round = 0, score = 0, history = [];
-let mode = "classic", bestKey = "cd_best";
-let current = null, startTime = 0, raf = 0, answered = true;
-
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const store = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch {} } };
+const fmtClock = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${s / 60 | 0}:${String(s % 60).padStart(2, "0")}`; };
+const fmtNum = n => n.toLocaleString("es-ES");
 
-function showBest(){ const b = +store.get(bestKey) || 0; $("best").textContent = b ? `Tu récord: ${b} puntos` : ""; }
+let S = { ...DEFAULTS };
+try { Object.assign(S, JSON.parse(store.get("cd_settings") || "{}")); } catch {}
+
+let albums = [], pool = [], queue = [], round = 0, score = 0, played = [];
+let mode = "classic", lfLabel = "", bestKey = "cd_best";
+let current = null, startTime = 0, raf = 0, answered = true, clockLeft = 0, multiplier = 1;
+
+/* ---------- Ajustes ---------- */
+function weightLabel(w){ return w === 0 ? "neutral" : (w < 0 ? `menos escuchados ×${(2 ** (-w / 100)).toFixed(1)}` : `más escuchados ×${(2 ** (w / 100)).toFixed(1)}`); }
+function syncSettings(){
+  document.querySelectorAll("#effectSeg button").forEach(b => b.classList.toggle("active", b.dataset.v === S.effect));
+  document.querySelectorAll("#gameSeg button").forEach(b => b.classList.toggle("active", b.dataset.v === S.game));
+  $("sIntensity").value = S.intensity; $("vIntensity").textContent = S.intensity + "/10";
+  $("sRoundTime").value = S.roundTime; $("vRoundTime").textContent = S.roundTime + " s";
+  $("sRounds").value = S.rounds; $("vRounds").textContent = S.rounds;
+  $("sTotal").value = S.total; $("vTotal").textContent = fmtClock(S.total * 1000);
+  $("sPenalty").value = S.penalty; $("vPenalty").textContent = S.penalty ? `−${S.penalty}` : "ninguna";
+  $("sWeight").value = S.weight; $("vWeight").textContent = weightLabel(S.weight);
+  $("rowRounds").classList.toggle("hidden", S.game !== "rounds");
+  $("rowTotal").classList.toggle("hidden", S.game !== "clock");
+  $("rowWeight").classList.toggle("hidden", mode !== "lastfm");
+  $("setSummary").textContent = `${EFFECT_NAMES[S.effect]} ${S.intensity} · ${S.game === "rounds" ? S.rounds + " rondas" : fmtClock(S.total * 1000)}`;
+  store.set("cd_settings", JSON.stringify(S));
+  showBest();
+}
+function bindSeg(id, key){ document.querySelectorAll(`#${id} button`).forEach(b => b.onclick = e => { e.preventDefault(); S[key] = b.dataset.v; syncSettings(); }); }
+function bindRange(id, key){ $(id).oninput = () => { S[key] = +$(id).value; syncSettings(); }; }
+bindSeg("effectSeg", "effect"); bindSeg("gameSeg", "game");
+bindRange("sIntensity", "intensity"); bindRange("sRoundTime", "roundTime"); bindRange("sRounds", "rounds");
+bindRange("sTotal", "total"); bindRange("sPenalty", "penalty"); bindRange("sWeight", "weight");
+
+function recordKey(){ return `cd_best_${mode === "lastfm" ? "lf_" + lfLabel : "classic"}_${S.game}`; }
+function showBest(){
+  if (mode === "lastfm" && !lfLabel) { $("best").textContent = ""; return; }
+  const b = store.get(recordKey()); $("best").textContent = b !== null ? `Tu récord en este modo: ${fmtNum(+b)} puntos` : "";
+}
 
 function setMode(m){
   mode = m;
   document.querySelectorAll(".mode").forEach(b => b.classList.toggle("active", b.dataset.mode === m));
   $("lfForm").classList.toggle("hidden", m !== "lastfm");
   $("err").textContent = "";
-  if (m === "lastfm") $("lfUser").focus();
+  if (m === "lastfm") { lfLabel = ($("lfUser").value.trim().toLowerCase() && `${$("lfUser").value.trim().toLowerCase()}_${$("lfPeriod").value}`); $("lfUser").focus(); }
+  syncSettings();
 }
 
+/* ---------- Efectos ---------- */
+const img = $("img"), cv = $("cv");
+let mips = [], lastN = 0, lastLevels = 0, lastFrost = -1;
+
+function buildMips(source){
+  // cadena de reducciones a la mitad para que el pixelado promedie bien los colores
+  mips = []; let size = 512;
+  let prev = document.createElement("canvas"); prev.width = prev.height = size;
+  prev.getContext("2d").drawImage(source, 0, 0, size, size); mips.push(prev);
+  while (size > 4) {
+    size /= 2; const c = document.createElement("canvas"); c.width = c.height = size;
+    const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(prev, 0, 0, size, size);
+    mips.push(c); prev = c;
+  }
+}
+function drawPixels(n){
+  n = Math.max(2, Math.round(n)); if (n === lastN) return; lastN = n;
+  const src = [...mips].reverse().find(c => c.width >= n) || mips[0];
+  cv.width = cv.height = n;
+  const x = cv.getContext("2d"); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+  x.drawImage(src, 0, 0, n, n);
+}
+function setPoster(levels){
+  if (levels === lastLevels) return; lastLevels = levels;
+  const v = Array.from({ length: levels }, (_, i) => (i / (levels - 1)).toFixed(3)).join(" ");
+  document.querySelectorAll(".pf").forEach(f => f.setAttribute("tableValues", v));
+}
+function prepareEffect(){
+  lastN = 0; lastLevels = 0; lastFrost = -1;
+  const canvasFx = S.effect === "pixel" || S.effect === "bits";
+  cv.classList.toggle("hidden", !canvasFx);
+  img.style.visibility = canvasFx ? "hidden" : "visible";
+  img.style.filter = ""; cv.style.filter = "";
+  if (canvasFx) buildMips(img);
+  if (S.effect === "frost") $("frostNoise").setAttribute("seed", 1 + Math.random() * 999 | 0);
+}
+// a: 1 = máximo efecto, 0 = nítida
+function render(a){
+  const k = S.intensity;
+  switch (S.effect) {
+    case "blur":
+      img.style.filter = `blur(${(8 * k * a).toFixed(2)}px)`;
+      break;
+    case "frost": {
+      const sc = Math.round(16 * k * a * 2) / 2;
+      if (sc !== lastFrost) { lastFrost = sc; $("frostMap").setAttribute("scale", sc); }
+      img.style.filter = a > 0.003 ? `url(#frost) blur(${(0.35 * k * a).toFixed(2)}px)` : "none";
+      break;
+    }
+    case "pixel": {
+      const nMin = Math.max(3, Math.round(40 / k));
+      const n = nMin * Math.pow(200 / nMin, 1 - a);
+      if (n >= 190) { cv.classList.add("hidden"); img.style.visibility = "visible"; }
+      else { cv.classList.remove("hidden"); drawPixels(n); }
+      break;
+    }
+    case "bits": {
+      const nMin = Math.max(6, Math.round(90 / k));
+      const n = nMin * Math.pow(200 / nMin, 1 - a);
+      const levels = Math.max(2, Math.round(2 + Math.pow(1 - a, 2) * 30));
+      if (n >= 190 && levels >= 30) { cv.classList.add("hidden"); img.style.visibility = "visible"; break; }
+      drawPixels(n); setPoster(levels);
+      cv.style.filter = "url(#poster)";
+      break;
+    }
+  }
+}
+
+/* ---------- Datos ---------- */
 async function init(){
   try { albums = await (await fetch("albums.json")).json(); }
   catch { $("startBtn").textContent = "Error cargando albums.json"; $("startBtn").disabled = true; return; }
-  $("total").textContent = ROUNDS;
-  // ?user=xxx&period=3month abre directamente el modo Last.fm
   const q = new URLSearchParams(location.search);
   const u = q.get("user") || store.get("cd_lfuser");
   if (u) $("lfUser").value = u;
-  if (q.get("period") && $("lfPeriod").querySelector(`option[value="${CSS.escape(q.get("period"))}"]`)) $("lfPeriod").value = q.get("period");
-  if (q.get("user")) setMode("lastfm");
-  showBest();
+  if (q.get("period") && [...$("lfPeriod").options].some(o => o.value === q.get("period"))) $("lfPeriod").value = q.get("period");
+  setMode(q.get("user") ? "lastfm" : "classic");
 }
+$("lfUser").oninput = $("lfPeriod").onchange = () => { if (mode === "lastfm") { const u = $("lfUser").value.trim().toLowerCase(); lfLabel = u && `${u}_${$("lfPeriod").value}`; showBest(); } };
 
-function show(id){ for (const s of ["start","game","end"]) $(s).classList.toggle("hidden", s !== id); }
-
-// Portada en iTunes cuando Last.fm no tiene
 async function itunesCover(artist, album){
   try {
     const q = new URLSearchParams({ term: `${artist} ${album}`, entity: "album", limit: 5 });
@@ -180,22 +362,25 @@ async function loadLastfm(user, period){
   const r = await (await fetch(`https://ws.audioscrobbler.com/2.0/?${q}`)).json();
   if (r.error) throw new Error(r.error === 6 ? `No existe el usuario «${user}» en Last.fm` : r.message);
   const list = (r.topalbums?.album || []).map(a => {
-    const img = (a.image || []).find(i => i.size === "extralarge")?.["#text"] || "";
-    const ok = img && !img.includes(LF_PLACEHOLDER);
-    return { artist: a.artist.name, album: a.name, cover: ok ? img.replace(/\/\d+x\d+\//, "/600x600/") : null };
+    const im = (a.image || []).find(i => i.size === "extralarge")?.["#text"] || "";
+    const ok = im && !im.includes(LF_PLACEHOLDER);
+    return { artist: a.artist.name, album: a.name, plays: +a.playcount || 0, cover: ok ? im.replace(/\/\d+x\d+\//, "/600x600/") : null };
   });
-  // completa hasta 15 portadas que falten con iTunes, de 4 en 4
   const missing = list.filter(a => !a.cover).slice(0, 15);
   for (let i = 0; i < missing.length; i += 4)
     await Promise.all(missing.slice(i, i + 4).map(async a => { a.cover = await itunesCover(a.artist, a.album); }));
-  // sin duplicados de nombre (opciones indistinguibles)
   const seen = new Set();
-  return list.filter(a => a.cover && !seen.has((a.artist + "|" + a.album).toLowerCase()) && seen.add((a.artist + "|" + a.album).toLowerCase()));
+  const out = list.filter(a => { const k = (a.artist + "|" + a.album).toLowerCase(); return a.cover && !seen.has(k) && seen.add(k); });
+  out.forEach((a, i) => a.rank = out.length > 1 ? i / (out.length - 1) : 0); // 0 = el más escuchado
+  return out;
 }
+
+/* ---------- Partida ---------- */
+function show(id){ for (const s of ["start","game","end"]) $(s).classList.toggle("hidden", s !== id); }
 
 async function startClicked(){
   $("err").textContent = "";
-  if (mode === "classic") { pool = albums; bestKey = "cd_best"; return startGame(); }
+  if (mode === "classic") { pool = albums; return startGame(); }
   const user = $("lfUser").value.trim(), period = $("lfPeriod").value;
   if (!user) { $("err").textContent = "Escribe un usuario de Last.fm"; $("lfUser").focus(); return; }
   const btn = $("startBtn"); btn.disabled = true; btn.textContent = "Cargando discos…";
@@ -203,7 +388,7 @@ async function startClicked(){
     const list = await loadLastfm(user, period);
     if (list.length < 4) throw new Error("Ese usuario no tiene suficientes discos escuchados en ese periodo (mínimo 4).");
     pool = list;
-    bestKey = `cd_best_lf_${user.toLowerCase()}_${period}`;
+    lfLabel = `${user.toLowerCase()}_${period}`;
     store.set("cd_lfuser", user);
     window.history.replaceState(null, "", `?user=${encodeURIComponent(user)}&period=${period}`);
     startGame();
@@ -212,38 +397,51 @@ async function startClicked(){
   } finally { btn.disabled = false; btn.textContent = "Jugar"; }
 }
 
+function nextAlbum(){
+  if (!queue.length) {
+    queue = shuffle([...pool]);
+    if (current && queue.length > 1 && queue[0] === current) queue.push(queue.shift());
+  }
+  return queue.shift();
+}
+function peekAlbum(){ return queue[0]; }
+
 function startGame(){
-  deck = shuffle([...pool]).slice(0, Math.min(ROUNDS, pool.length));
-  $("total").textContent = deck.length;
-  round = 0; score = 0; history = [];
+  bestKey = recordKey();
+  queue = []; current = null; round = 0; score = 0; played = [];
+  clockLeft = S.total * 1000;
   $("score").textContent = 0;
+  $("ofTotal").classList.toggle("hidden", S.game !== "rounds");
+  $("total").textContent = S.rounds;
+  $("clockStat").classList.toggle("hidden", S.game !== "clock");
+  $("clock").textContent = fmtClock(clockLeft);
+  $("clockStat").classList.remove("low");
   show("game");
+  document.activeElement?.blur();
   nextRound();
 }
 
-function pointsAt(t){ // t: 0..1 progreso
-  return Math.round(MAX_POINTS - (MAX_POINTS - MIN_POINTS) * Math.min(1, t));
-}
-
-function loadImage(src){
-  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(src); i.onerror = rej; i.src = src; });
-}
+const pointsAt = t => Math.round((MAX_POINTS - (MAX_POINTS - MIN_POINTS) * Math.min(1, t)) * multiplier);
+const loadImage = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
 
 async function nextRound(){
-  if (round >= deck.length) return endGame();
-  current = deck[round++];
+  if (S.game === "rounds" && round >= S.rounds) return endGame();
+  if (S.game === "clock" && clockLeft <= 0) return endGame();
+  current = nextAlbum();
+  round++;
   $("round").textContent = round;
   $("result").textContent = ""; $("result").className = "result";
   $("nextBtn").classList.add("hidden");
   $("cover").classList.remove("revealed");
-  const img = $("img");
-  img.style.visibility = "hidden";
-  img.style.filter = `blur(${MAX_BLUR}px)`;
+  img.style.visibility = "hidden"; cv.classList.add("hidden");
   $("loading").classList.remove("hidden");
   $("bar").style.transform = "scaleX(1)";
-  $("potential").textContent = MAX_POINTS;
 
-  // 3 distractores, evitando repetir el mismo disco
+  multiplier = (mode === "lastfm" && S.weight && current.rank !== undefined) ? 2 ** ((S.weight / 100) * (1 - 2 * current.rank)) : 1;
+  $("mult").classList.toggle("hidden", multiplier === 1);
+  $("mult").textContent = `×${multiplier.toFixed(2)}`;
+  $("potential").textContent = pointsAt(0);
+
   const others = shuffle(pool.filter(a => a !== current)).slice(0, 3);
   const opts = shuffle([current, ...others]);
   const box = $("options"); box.innerHTML = "";
@@ -258,13 +456,14 @@ async function nextRound(){
     box.appendChild(b);
   });
 
-  // precarga la siguiente portada en paralelo
-  if (deck[round]) loadImage(deck[round].cover).catch(()=>{});
+  if (!queue.length) queue = shuffle(pool.filter(a => a !== current));
+  if (peekAlbum()) loadImage(peekAlbum().cover).catch(() => {});
 
-  try { await loadImage(current.cover); }
-  catch { round--; deck.splice(round, 1); return nextRound(); } // portada rota: saltar
-  img.src = current.cover;
-  img.style.visibility = "visible";
+  try {
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.crossOrigin = null; img.src = current.cover; if (img.complete && img.naturalWidth) res(); });
+  } catch { round--; pool = pool.filter(a => a !== current); if (pool.length < 4) return endGame(); return nextRound(); }
+  prepareEffect();
+  render(1);
   $("loading").classList.add("hidden");
   box.querySelectorAll(".opt").forEach(b => b.disabled = false);
   answered = false;
@@ -274,26 +473,35 @@ async function nextRound(){
 
 function tick(now){
   if (answered) return;
-  const t = Math.min(1, (now - startTime) / DURATION);
-  // curva: se aclara despacio al principio y más rápido al final
-  const blur = MAX_BLUR * Math.pow(1 - t, 1.6);
-  $("img").style.filter = `blur(${blur.toFixed(2)}px)`;
+  const elapsed = now - startTime;
+  const t = Math.min(1, elapsed / (S.roundTime * 1000));
+  render(Math.pow(1 - t, 1.6));
   $("bar").style.transform = `scaleX(${1 - t})`;
   $("potential").textContent = pointsAt(t);
-  if (t < 1) raf = requestAnimationFrame(tick);
+  if (S.game === "clock") {
+    const left = clockLeft - elapsed;
+    $("clock").textContent = fmtClock(left);
+    $("clockStat").classList.toggle("low", left < 10000);
+    if (left <= 0) { clockLeft = 0; answered = true; round--; return endGame(); }
+  }
+  if (t >= 1) return answer(null, null);
+  raf = requestAnimationFrame(tick);
 }
 
 function answer(btn, album){
   if (answered) return;
   answered = true;
   cancelAnimationFrame(raf);
-  const t = (performance.now() - startTime) / DURATION;
+  const elapsed = Math.min(performance.now() - startTime, S.roundTime * 1000);
+  if (S.game === "clock") { clockLeft -= elapsed; $("clock").textContent = fmtClock(clockLeft); }
+  const t = elapsed / (S.roundTime * 1000);
   const ok = album === current;
-  const pts = ok ? pointsAt(t) : 0;
+  const pts = ok ? pointsAt(t) : -S.penalty;
   score += pts;
-  $("score").textContent = score;
-  history.push({ album: current, ok });
+  $("score").textContent = fmtNum(score);
+  played.push({ album: current, ok, pts, time: elapsed, timeout: !album, mult: multiplier });
   $("cover").classList.add("revealed");
+  img.style.visibility = "visible";
   $("options").querySelectorAll(".opt").forEach(b => {
     b.disabled = true;
     if (b._album === current) b.classList.add("ok");
@@ -302,43 +510,56 @@ function answer(btn, album){
   });
   const r = $("result");
   r.className = "result " + (ok ? "ok" : "bad");
-  r.textContent = ok ? `¡Correcto! +${pts}` : `Era «${current.album}» de ${current.artist}`;
+  const pen = S.penalty ? ` (−${S.penalty})` : "";
+  r.textContent = ok ? `¡Correcto! +${fmtNum(pts)}` : `${album ? "No." : "¡Se acabó el tiempo!"} Era «${current.album}» de ${current.artist}${pen}`;
+  const last = (S.game === "rounds" && round >= S.rounds) || (S.game === "clock" && clockLeft <= 0);
   const nb = $("nextBtn");
-  nb.textContent = round >= deck.length ? "Ver resultado" : "Siguiente";
+  nb.textContent = last ? "Ver resultado" : "Siguiente";
   nb.classList.remove("hidden");
   nb.focus();
 }
 
 function endGame(){
+  cancelAnimationFrame(raf); answered = true;
   show("end");
-  $("final").textContent = score;
-  const hits = history.filter(h => h.ok).length;
-  const best = +store.get(bestKey) || 0;
-  let msg = `${hits} de ${history.length} aciertos.`;
-  if (score > best) { store.set(bestKey, score); msg += " ¡Nuevo récord!"; }
+  $("final").textContent = fmtNum(score);
+  const hits = played.filter(h => h.ok).length;
+  const best = store.get(bestKey);
+  let msg = `${hits} de ${played.length} aciertos · ${EFFECT_NAMES[S.effect]} ${S.intensity}/10`;
+  if (played.length && (best === null || score > +best)) { store.set(bestKey, score); msg += " · ¡Nuevo récord!"; }
   $("endMsg").textContent = msg;
   const s = $("summary"); s.innerHTML = "";
-  history.forEach(h => {
-    const i = document.createElement("img");
-    i.src = h.album.cover; i.title = `${h.album.artist} — ${h.album.album}`; i.alt = i.title;
-    if (h.ok) i.className = "ok";
-    s.appendChild(i);
+  played.forEach(h => {
+    const row = document.createElement("div");
+    row.className = "srow" + (h.ok ? " ok" : "");
+    row.innerHTML = `<img alt=""><div class="t"><strong></strong><small></small><small class="meta"><span class="time"></span><span class="plays"></span></small></div><div class="m"><b></b></div>`;
+    row.querySelector("img").src = h.album.cover;
+    row.querySelector("strong").textContent = h.album.album;
+    row.querySelector("small:not(.meta)").textContent = h.album.artist;
+    row.querySelector("b").textContent = h.pts > 0 ? `+${fmtNum(h.pts)}` : (h.pts < 0 ? `−${fmtNum(-h.pts)}` : "0");
+    row.querySelector(".time").textContent = h.timeout ? "⏱ agotado" : `⏱ ${(h.time / 1000).toFixed(1)} s`;
+    if (h.album.plays !== undefined) {
+      row.querySelector(".plays").textContent = ` · ${fmtNum(h.album.plays)} scrobbles${h.mult !== 1 ? ` ×${h.mult.toFixed(2)}` : ""}`;
+    }
+    s.appendChild(row);
   });
-  showBest();
 }
 
 $("startBtn").onclick = startClicked;
-document.querySelectorAll(".mode").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $("againBtn").onclick = startGame;
+$("menuBtn").onclick = () => { show("start"); syncSettings(); $("settings").open = true; };
 $("nextBtn").onclick = nextRound;
+document.querySelectorAll(".mode").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 document.addEventListener("keydown", e => {
   if (!$("game").classList.contains("hidden")) {
-    if (!answered && e.key >= "1" && e.key <= "4") {
-      const b = $("options").children[+e.key - 1]; if (b && !b.disabled) b.click();
+    const n = /^Digit([1-4])$|^Numpad([1-4])$/.exec(e.code), key = e.key >= "1" && e.key <= "4" ? +e.key : (n ? +(n[1] || n[2]) : 0);
+    if (key) e.preventDefault();
+    if (!answered && key) {
+      const b = $("options").children[key - 1]; if (b && !b.disabled) b.click();
     } else if (answered && e.key === "Enter" && !$("nextBtn").classList.contains("hidden")) {
       e.preventDefault(); nextRound();
     }
-  } else if (e.key === "Enter") {
+  } else if (e.key === "Enter" && !e.target.matches("summary, .seg button, .mode, select, input[type=range]")) {
     const v = !$("start").classList.contains("hidden") ? $("startBtn") : $("againBtn");
     if (!v.disabled) { e.preventDefault(); v.click(); }
   }
