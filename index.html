@@ -25,6 +25,19 @@ h1 span{color:var(--accent)}
 .stats .clock b{color:var(--accent)}
 .stats .clock.low b{color:var(--bad)}
 main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
+body.wide main,body.wide header{max-width:680px}
+body.wide h1{font-size:1.5rem}
+body.wide .stats{visibility:hidden}
+body.wide .btn#startBtn,body.wide .btn#againBtn{font-size:1.1rem;padding:14px 40px}
+body.wide .modes{font-size:1.05rem}
+#bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--bg);transition:opacity .8s}
+#bg .bgl{position:absolute;inset:-6%;background:center/cover no-repeat;opacity:0;filter:blur(40px);transform:scale(1.08);transition:opacity 1.2s ease,filter 6s cubic-bezier(.3,.1,.3,1),transform 12s linear}
+#bg .bgl.in{opacity:1;filter:blur(0);transform:scale(1)}
+#bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(15,15,20,.55),rgba(15,15,20,.88))}
+body:not(.wide) #bg{opacity:0}
+@media (prefers-reduced-motion:reduce){#bg .bgl{transition:opacity 1.2s;filter:blur(6px);transform:none}#bg .bgl.in{filter:blur(6px)}}
+p,h1,h2,.result,.opt strong{text-wrap:pretty}
+h2,.screen p,.result{text-wrap:balance}
 .cover{position:relative;width:100%;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;background:var(--panel);box-shadow:0 10px 40px #0008}
 .cover img,.cover canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;pointer-events:none}
 .cover img{transform:scale(1.15);will-change:filter,transform}
@@ -55,9 +68,10 @@ main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
 .btn:hover{filter:brightness(1.08)}
 .btn:disabled{opacity:.6;cursor:wait}
 .hidden{display:none!important}
-.screen{background:var(--panel);border-radius:var(--radius);padding:28px 22px;text-align:center}
-.screen h2{margin:0 0 8px;font-size:1.6rem}
-.screen p{color:var(--muted);margin:8px 0}
+.screen{background:rgba(26,26,35,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid #ffffff14;border-radius:var(--radius);padding:36px 32px;text-align:center;box-shadow:0 20px 60px #000a}
+@media (max-width:520px){.screen{padding:28px 18px}}
+.screen h2{margin:0 0 12px;font-size:clamp(1.8rem,5vw,2.4rem)}
+.screen p{color:#c4c4d0;margin:10px auto;font-size:1.08rem;max-width:34em}
 .big{font-size:3rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;margin:8px 0}
 .modes,.seg{display:inline-flex;flex-wrap:wrap;background:var(--bg);border-radius:999px;padding:4px;gap:4px}
 .modes{margin:16px 0 4px}
@@ -94,7 +108,7 @@ footer{color:var(--muted);font-size:.8rem;padding:16px;text-align:center}
 footer a{color:var(--muted)}
 </style>
 </head>
-<body>
+<body class="wide">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="frost" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
     <feTurbulence id="frostNoise" type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="1" result="n"/>
@@ -108,6 +122,8 @@ footer a{color:var(--muted)}
     </feComponentTransfer>
   </filter>
 </svg>
+
+<div id="bg" aria-hidden="true"><div class="bgl"></div><div class="bgl"></div></div>
 
 <header>
   <h1>Carátulas <span>Difusas</span></h1>
@@ -344,6 +360,7 @@ async function init(){
   if (u) $("lfUser").value = u;
   if (q.get("period") && [...$("lfPeriod").options].some(o => o.value === q.get("period"))) $("lfPeriod").value = q.get("period");
   setMode(q.get("user") ? "lastfm" : "classic");
+  show("start");
 }
 $("lfUser").oninput = $("lfPeriod").onchange = () => { if (mode === "lastfm") { const u = $("lfUser").value.trim().toLowerCase(); lfLabel = u && `${u}_${$("lfPeriod").value}`; showBest(); } };
 
@@ -376,7 +393,35 @@ async function loadLastfm(user, period){
 }
 
 /* ---------- Partida ---------- */
-function show(id){ for (const s of ["start","game","end"]) $(s).classList.toggle("hidden", s !== id); }
+function show(id){
+  for (const s of ["start","game","end"]) $(s).classList.toggle("hidden", s !== id);
+  document.body.classList.toggle("wide", id !== "game");
+  if (id === "game") stopBg(); else startBg();
+}
+
+/* ---------- Fondo: portada aleatoria que se aclara, aguanta y cambia ---------- */
+let bgTimer = 0, bgOn = false, bgLayer = 0, bgLast = null;
+function bgNext(){
+  if (!bgOn || !albums.length) return;
+  let a; do { a = albums[Math.random() * albums.length | 0]; } while (albums.length > 1 && a === bgLast);
+  bgLast = a;
+  const pre = new Image();
+  pre.onload = () => {
+    if (!bgOn) return;
+    const layers = document.querySelectorAll("#bg .bgl");
+    const nxt = layers[bgLayer ^= 1], old = layers[bgLayer ^ 1];
+    nxt.classList.remove("in");
+    nxt.style.backgroundImage = `url("${a.cover}")`;
+    void nxt.offsetWidth; // reinicia la transición
+    nxt.classList.add("in");
+    old.classList.remove("in");
+    bgTimer = setTimeout(bgNext, 10000); // ~6 s aclarándose + ~4 s nítida
+  };
+  pre.onerror = () => { bgTimer = setTimeout(bgNext, 500); };
+  pre.src = a.cover;
+}
+function startBg(){ if (bgOn) return; bgOn = true; bgNext(); }
+function stopBg(){ bgOn = false; clearTimeout(bgTimer); }
 
 async function startClicked(){
   $("err").textContent = "";
