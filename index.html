@@ -374,7 +374,7 @@ async function itunesCover(artist, album){
   } catch { return null; }
 }
 
-async function loadLastfm(user, period){
+async function loadLastfm(user, period, onExtra){
   const q = new URLSearchParams({ method: "user.gettopalbums", user, period, limit: 60, api_key: LASTFM_API_KEY, format: "json" });
   const r = await (await fetch(`https://ws.audioscrobbler.com/2.0/?${q}`)).json();
   if (r.error) throw new Error(r.error === 6 ? `No existe el usuario «${user}» en Last.fm` : r.message);
@@ -383,12 +383,21 @@ async function loadLastfm(user, period){
     const ok = im && !im.includes(LF_PLACEHOLDER);
     return { artist: a.artist.name, album: a.name, plays: +a.playcount || 0, cover: ok ? im.replace(/\/\d+x\d+\//, "/600x600/") : null };
   });
-  const missing = list.filter(a => !a.cover).slice(0, 15);
-  for (let i = 0; i < missing.length; i += 4)
-    await Promise.all(missing.slice(i, i + 4).map(async a => { a.cover = await itunesCover(a.artist, a.album); }));
+  // rango según el orden de escuchas de la lista completa (0 = el más escuchado)
   const seen = new Set();
-  const out = list.filter(a => { const k = (a.artist + "|" + a.album).toLowerCase(); return a.cover && !seen.has(k) && seen.add(k); });
-  out.forEach((a, i) => a.rank = out.length > 1 ? i / (out.length - 1) : 0); // 0 = el más escuchado
+  const uniq = list.filter(a => { const k = (a.artist + "|" + a.album).toLowerCase(); return !seen.has(k) && seen.add(k); });
+  uniq.forEach((a, i) => a.rank = uniq.length > 1 ? i / (uniq.length - 1) : 0);
+  const out = uniq.filter(a => a.cover);
+  // las portadas que faltan se buscan en iTunes en segundo plano y se añaden cuando llegan
+  const missing = uniq.filter(a => !a.cover).slice(0, 15);
+  const lookups = (async () => {
+    for (let i = 0; i < missing.length; i += 4)
+      await Promise.all(missing.slice(i, i + 4).map(async a => {
+        a.cover = await itunesCover(a.artist, a.album);
+        if (a.cover) { out.push(a); if (onExtra) onExtra(a); }
+      }));
+  })();
+  if (out.length < 4) await lookups; // solo esperamos si no hay bastantes para empezar
   return out;
 }
 
@@ -430,7 +439,9 @@ async function startClicked(){
   if (!user) { $("err").textContent = "Escribe un usuario de Last.fm"; $("lfUser").focus(); return; }
   const btn = $("startBtn"); btn.disabled = true; btn.textContent = "Cargando discos…";
   try {
-    const list = await loadLastfm(user, period);
+    let gamePool = null;
+    const list = await loadLastfm(user, period, a => { if (gamePool && pool === gamePool && !pool.includes(a)) pool.push(a); });
+    gamePool = list;
     if (list.length < 4) throw new Error("Ese usuario no tiene suficientes discos escuchados en ese periodo (mínimo 4).");
     pool = list;
     lfLabel = `${user.toLowerCase()}_${period}`;
@@ -449,7 +460,6 @@ function nextAlbum(){
   }
   return queue.shift();
 }
-function peekAlbum(){ return queue[0]; }
 
 function startGame(){
   bestKey = recordKey();
@@ -467,7 +477,36 @@ function startGame(){
 }
 
 const pointsAt = t => Math.round((MAX_POINTS - (MAX_POINTS - MIN_POINTS) * Math.min(1, t)) * multiplier);
-const loadImage = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+const imgCache = new Map();
+function loadImage(src){
+  if (!imgCache.has(src)) {
+    const pr = new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+    pr.catch(() => imgCache.delete(src));
+    imgCache.set(src, pr);
+  }
+  return imgCache.get(src);
+}
+// versión de 300 px: Last.fm la tiene casi siempre en caché; la de 600 la genera al vuelo (1–8 s la primera vez)
+const smallOf = url => url.replace("/600x600/", "/300x300/").replace("600x600bb", "300x300bb");
+const delay = ms => new Promise(r => setTimeout(r, ms));
+function prefetchAhead(n = 3){
+  if (queue.length < n) queue.push(...shuffle(pool.filter(a => a !== current && !queue.includes(a))));
+  queue.slice(0, n).forEach(a => loadImage(a.cover).catch(() => {}));
+}
+// devuelve la mejor imagen disponible rápido: la grande si llega en 700 ms, si no la pequeña (y la grande después)
+async function bestImage(a){
+  const big = loadImage(a.cover);
+  const quick = await Promise.race([big.catch(() => null), delay(700).then(() => null)]);
+  if (quick) return { first: quick, later: null };
+  const small = smallOf(a.cover);
+  if (small === a.cover) return { first: await big, later: null };
+  const first = await Promise.any([big, loadImage(small)]);
+  return { first, later: first.src === a.cover ? null : big };
+}
+async function showImage(el){
+  img.src = el.src;
+  try { await img.decode(); } catch {}
+}
 
 async function nextRound(){
   if (S.game === "rounds" && round >= S.rounds) return endGame();
@@ -501,12 +540,18 @@ async function nextRound(){
     box.appendChild(b);
   });
 
-  if (!queue.length) queue = shuffle(pool.filter(a => a !== current));
-  if (peekAlbum()) loadImage(peekAlbum().cover).catch(() => {});
+  prefetchAhead(3);
 
-  try {
-    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.crossOrigin = null; img.src = current.cover; if (img.complete && img.naturalWidth) res(); });
-  } catch { round--; pool = pool.filter(a => a !== current); if (pool.length < 4) return endGame(); return nextRound(); }
+  const me = current;
+  let pics;
+  try { pics = await bestImage(me); await showImage(pics.first); }
+  catch { round--; pool = pool.filter(a => a !== me); queue = queue.filter(a => a !== me); if (pool.length < 4) return endGame(); return nextRound(); }
+  if (pics.later) pics.later.then(async big => {
+    if (current !== me) return;
+    await showImage(big);
+    if (current !== me) return;
+    if (S.effect === "pixel" || S.effect === "bits") { buildMips(img); lastN = 0; }
+  }).catch(() => {});
   prepareEffect();
   render(1);
   $("loading").classList.add("hidden");
@@ -578,7 +623,7 @@ function endGame(){
     const row = document.createElement("div");
     row.className = "srow" + (h.ok ? " ok" : "");
     row.innerHTML = `<img alt=""><div class="t"><strong></strong><small></small><small class="meta"><span class="time"></span><span class="plays"></span></small></div><div class="m"><b></b></div>`;
-    row.querySelector("img").src = h.album.cover;
+    row.querySelector("img").src = smallOf(h.album.cover);
     row.querySelector("strong").textContent = h.album.album;
     row.querySelector("small:not(.meta)").textContent = h.album.artist;
     row.querySelector("b").textContent = h.pts > 0 ? `+${fmtNum(h.pts)}` : (h.pts < 0 ? `−${fmtNum(-h.pts)}` : "0");
