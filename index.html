@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carátulas Difusas</title>
+<meta name="description" content="Adivina el disco a partir de su portada difuminada.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💿</text></svg>">
+<style>
+:root{
+  --bg:#0f0f14; --panel:#1a1a23; --panel2:#24242f; --text:#f2f2f5; --muted:#9a9aab;
+  --accent:#ffb02e; --ok:#2ecc71; --bad:#ff4d5e; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{width:100%;max-width:560px;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:1.25rem;margin:0;letter-spacing:.02em}
+h1 span{color:var(--accent)}
+.stats{display:flex;gap:14px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.95rem}
+.stats b{color:var(--text)}
+main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
+.cover{position:relative;width:100%;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;background:var(--panel);box-shadow:0 10px 40px #0008}
+.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.15);will-change:filter,transform;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.cover.revealed img{filter:none!important;transform:scale(1);transition:filter .5s,transform .5s}
+.cover .loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
+.bar{height:6px;background:var(--panel2);border-radius:3px;margin:14px 0;overflow:hidden}
+.bar div{height:100%;width:100%;background:var(--accent);transform-origin:left;transform:scaleX(1)}
+.potential{text-align:center;color:var(--muted);font-size:.9rem;margin:-6px 0 12px;font-variant-numeric:tabular-nums}
+.potential b{color:var(--accent)}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.options{grid-template-columns:1fr}}
+.opt{background:var(--panel);color:var(--text);border:2px solid var(--panel2);border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;min-height:64px;transition:background .15s,border-color .15s,transform .05s}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:active:not(:disabled){transform:scale(.98)}
+.opt small{display:block;color:var(--muted);font-size:.8rem;margin-bottom:2px}
+.opt strong{font-weight:600}
+.opt .k{float:right;color:var(--muted);font-size:.75rem;border:1px solid var(--panel2);border-radius:4px;padding:0 5px;margin-left:6px}
+.opt:disabled{cursor:default}
+.opt.ok{background:#173d27;border-color:var(--ok)}
+.opt.bad{background:#46161c;border-color:var(--bad)}
+.opt.dim{opacity:.45}
+.result{text-align:center;margin:14px 0 4px;min-height:1.5em;font-weight:600}
+.result.ok{color:var(--ok)} .result.bad{color:var(--bad)}
+.btn{display:block;margin:12px auto 0;background:var(--accent);color:#1a1200;border:0;border-radius:999px;padding:12px 28px;font:inherit;font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.hidden{display:none!important}
+.screen{background:var(--panel);border-radius:var(--radius);padding:28px 22px;text-align:center}
+.screen h2{margin:0 0 8px;font-size:1.6rem}
+.screen p{color:var(--muted);margin:8px 0}
+.big{font-size:3rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;margin:8px 0}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:16px 0}
+.summary img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:3px solid var(--bad)}
+.summary img.ok{border-color:var(--ok)}
+footer{color:var(--muted);font-size:.8rem;padding:16px;text-align:center}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Carátulas <span>Difusas</span></h1>
+  <div class="stats">
+    <span>Ronda <b id="round">0</b>/<b id="total">10</b></span>
+    <span>Puntos <b id="score">0</b></span>
+  </div>
+</header>
+
+<main>
+  <section id="start" class="screen">
+    <h2>💿 ¿Qué disco es?</h2>
+    <p>La portada empieza muy difuminada y se va aclarando poco a poco.</p>
+    <p>Cuanto antes aciertes entre las 4 opciones, más puntos. Si fallas, 0.</p>
+    <p>Teclas <b>1–4</b> para responder, <b>Enter</b> para seguir.</p>
+    <p id="best"></p>
+    <button class="btn" id="startBtn">Jugar</button>
+  </section>
+
+  <section id="game" class="hidden">
+    <div class="cover" id="cover"><div class="loading" id="loading">Cargando…</div><img id="img" alt=""></div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="potential">Puntos en juego: <b id="potential">1000</b></div>
+    <div class="options" id="options"></div>
+    <div class="result" id="result"></div>
+    <button class="btn hidden" id="nextBtn">Siguiente</button>
+  </section>
+
+  <section id="end" class="screen hidden">
+    <h2>Fin de la partida</h2>
+    <div class="big" id="final">0</div>
+    <p id="endMsg"></p>
+    <div class="summary" id="summary"></div>
+    <button class="btn" id="againBtn">Otra partida</button>
+  </section>
+</main>
+
+<footer>Portadas vía iTunes Search API · <a href="https://github.com/volteret4/caratulas_difusas">código</a></footer>
+
+<script>
+const ROUNDS = 10;          // rondas por partida
+const DURATION = 20000;     // ms hasta que la portada queda nítida
+const MAX_BLUR = 45;        // px de desenfoque inicial
+const MAX_POINTS = 1000, MIN_POINTS = 100;
+
+const $ = id => document.getElementById(id);
+let albums = [], deck = [], round = 0, score = 0, history = [];
+let current = null, startTime = 0, raf = 0, answered = true;
+
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const store = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch {} } };
+
+function showBest(){ const b = +store.get("cd_best") || 0; $("best").textContent = b ? `Tu récord: ${b} puntos` : ""; }
+
+async function init(){
+  try { albums = await (await fetch("albums.json")).json(); }
+  catch { $("startBtn").textContent = "Error cargando albums.json"; $("startBtn").disabled = true; return; }
+  $("total").textContent = ROUNDS;
+  showBest();
+}
+
+function show(id){ for (const s of ["start","game","end"]) $(s).classList.toggle("hidden", s !== id); }
+
+function startGame(){
+  deck = shuffle([...albums]).slice(0, Math.min(ROUNDS, albums.length));
+  round = 0; score = 0; history = [];
+  $("score").textContent = 0;
+  show("game");
+  nextRound();
+}
+
+function pointsAt(t){ // t: 0..1 progreso
+  return Math.round(MAX_POINTS - (MAX_POINTS - MIN_POINTS) * Math.min(1, t));
+}
+
+function loadImage(src){
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(src); i.onerror = rej; i.src = src; });
+}
+
+async function nextRound(){
+  if (round >= deck.length) return endGame();
+  current = deck[round++];
+  $("round").textContent = round;
+  $("result").textContent = ""; $("result").className = "result";
+  $("nextBtn").classList.add("hidden");
+  $("cover").classList.remove("revealed");
+  const img = $("img");
+  img.style.visibility = "hidden";
+  img.style.filter = `blur(${MAX_BLUR}px)`;
+  $("loading").classList.remove("hidden");
+  $("bar").style.transform = "scaleX(1)";
+  $("potential").textContent = MAX_POINTS;
+
+  // 3 distractores, evitando repetir el mismo disco
+  const others = shuffle(albums.filter(a => a !== current)).slice(0, 3);
+  const opts = shuffle([current, ...others]);
+  const box = $("options"); box.innerHTML = "";
+  opts.forEach((a, i) => {
+    const b = document.createElement("button");
+    b.className = "opt"; b.disabled = true;
+    b.innerHTML = `<span class="k">${i+1}</span><small></small><strong></strong>`;
+    b.querySelector("small").textContent = a.artist;
+    b.querySelector("strong").textContent = a.album;
+    b.onclick = () => answer(b, a);
+    b._album = a;
+    box.appendChild(b);
+  });
+
+  // precarga la siguiente portada en paralelo
+  if (deck[round]) loadImage(deck[round].cover).catch(()=>{});
+
+  try { await loadImage(current.cover); }
+  catch { round--; deck.splice(round, 1); return nextRound(); } // portada rota: saltar
+  img.src = current.cover;
+  img.style.visibility = "visible";
+  $("loading").classList.add("hidden");
+  box.querySelectorAll(".opt").forEach(b => b.disabled = false);
+  answered = false;
+  startTime = performance.now();
+  raf = requestAnimationFrame(tick);
+}
+
+function tick(now){
+  if (answered) return;
+  const t = Math.min(1, (now - startTime) / DURATION);
+  // curva: se aclara despacio al principio y más rápido al final
+  const blur = MAX_BLUR * Math.pow(1 - t, 1.6);
+  $("img").style.filter = `blur(${blur.toFixed(2)}px)`;
+  $("bar").style.transform = `scaleX(${1 - t})`;
+  $("potential").textContent = pointsAt(t);
+  if (t < 1) raf = requestAnimationFrame(tick);
+}
+
+function answer(btn, album){
+  if (answered) return;
+  answered = true;
+  cancelAnimationFrame(raf);
+  const t = (performance.now() - startTime) / DURATION;
+  const ok = album === current;
+  const pts = ok ? pointsAt(t) : 0;
+  score += pts;
+  $("score").textContent = score;
+  history.push({ album: current, ok });
+  $("cover").classList.add("revealed");
+  $("options").querySelectorAll(".opt").forEach(b => {
+    b.disabled = true;
+    if (b._album === current) b.classList.add("ok");
+    else if (b === btn) b.classList.add("bad");
+    else b.classList.add("dim");
+  });
+  const r = $("result");
+  r.className = "result " + (ok ? "ok" : "bad");
+  r.textContent = ok ? `¡Correcto! +${pts}` : `Era «${current.album}» de ${current.artist}`;
+  const nb = $("nextBtn");
+  nb.textContent = round >= deck.length ? "Ver resultado" : "Siguiente";
+  nb.classList.remove("hidden");
+  nb.focus();
+}
+
+function endGame(){
+  show("end");
+  $("final").textContent = score;
+  const hits = history.filter(h => h.ok).length;
+  const best = +store.get("cd_best") || 0;
+  let msg = `${hits} de ${history.length} aciertos.`;
+  if (score > best) { store.set("cd_best", score); msg += " ¡Nuevo récord!"; }
+  $("endMsg").textContent = msg;
+  const s = $("summary"); s.innerHTML = "";
+  history.forEach(h => {
+    const i = document.createElement("img");
+    i.src = h.album.cover; i.title = `${h.album.artist} — ${h.album.album}`; i.alt = i.title;
+    if (h.ok) i.className = "ok";
+    s.appendChild(i);
+  });
+  showBest();
+}
+
+$("startBtn").onclick = startGame;
+$("againBtn").onclick = startGame;
+$("nextBtn").onclick = nextRound;
+document.addEventListener("keydown", e => {
+  if (!$("game").classList.contains("hidden")) {
+    if (!answered && e.key >= "1" && e.key <= "4") {
+      const b = $("options").children[+e.key - 1]; if (b && !b.disabled) b.click();
+    } else if (answered && e.key === "Enter" && !$("nextBtn").classList.contains("hidden")) {
+      e.preventDefault(); nextRound();
+    }
+  } else if (e.key === "Enter") {
+    const v = !$("start").classList.contains("hidden") ? $("startBtn") : $("againBtn");
+    if (!v.disabled) { e.preventDefault(); v.click(); }
+  }
+});
+init();
+</script>
+</body>
+</html>

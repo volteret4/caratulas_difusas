@@ -1,0 +1,91 @@
+# Artista | Álbum  (una línea por disco; ejecuta tools/build.py para regenerar albums.json)
+Radiohead | OK Computer
+Nirvana | Nevermind
+Pink Floyd | The Dark Side of the Moon
+The Beatles | Abbey Road
+The Beatles | Sgt. Pepper's Lonely Hearts Club Band
+Michael Jackson | Thriller
+Fleetwood Mac | Rumours
+The Velvet Underground | The Velvet Underground & Nico
+Joy Division | Unknown Pleasures
+The Clash | London Calling
+Prince | Purple Rain
+Daft Punk | Random Access Memories
+Daft Punk | Discovery
+Kanye West | My Beautiful Dark Twisted Fantasy
+Kendrick Lamar | To Pimp a Butterfly
+Amy Winehouse | Back to Black
+Adele | 21
+Taylor Swift | 1989
+Beyoncé | Lemonade
+Arctic Monkeys | AM
+The Strokes | Is This It
+Queen | A Night at the Opera
+David Bowie | The Rise and Fall of Ziggy Stardust and the Spiders from Mars
+David Bowie | Blackstar
+Led Zeppelin | Led Zeppelin IV
+AC/DC | Back in Black
+Metallica | Metallica
+Guns N' Roses | Appetite for Destruction
+U2 | The Joshua Tree
+Oasis | (What's the Story) Morning Glory?
+Blur | Parklife
+The Cure | Disintegration
+The Smiths | The Queen Is Dead
+Depeche Mode | Violator
+Massive Attack | Mezzanine
+Portishead | Dummy
+Björk | Homogenic
+Bob Marley & The Wailers | Legend
+Bruce Springsteen | Born in the U.S.A.
+Lana Del Rey | Born to Die
+Billie Eilish | When We All Fall Asleep, Where Do We Go?
+Frank Ocean | Blonde
+Tame Impala | Currents
+Gorillaz | Demon Days
+Red Hot Chili Peppers | Californication
+Pearl Jam | Ten
+The Rolling Stones | Sticky Fingers
+Bob Dylan | Highway 61 Revisited
+Marvin Gaye | What's Going On
+Lauryn Hill | The Miseducation of Lauryn Hill
+Dr. Dre | 2001
+Eminem | The Marshall Mathers LP
+Coldplay | A Rush of Blood to the Head
+Muse | Origin of Symmetry
+The White Stripes | Elephant
+Arcade Fire | Funeral
+LCD Soundsystem | Sound of Silver
+Rosalía | El Mal Querer
+Rosalía | Motomami
+Bad Bunny | Un Verano Sin Ti
+Bad Bunny | YHLQMDLG
+Héroes del Silencio | Senderos de Traición
+Extremoduro | Agila
+Vetusta Morla | Un Día en el Mundo
+Love of Lesbian | 1999
+Los Planetas | Una Semana en el Motor de un Autobús
+Mecano | Entre el Cielo y el Suelo
+Soda Stereo | Canción Animal
+Café Tacvba | Re
+Manu Chao | Clandestino
+Estopa | Estopa
+C. Tangana | El Madrileño
+Joaquín Sabina | 19 Días y 500 Noches
+Fito & Fitipaldis | Por la Boca Vive el Pez
+Camarón | La Leyenda del Tiempo
+Bunbury | Pequeño
+Nirvana | In Utero
+Radiohead | Kid A
+The Killers | Hot Fuss
+Franz Ferdinand | Franz Ferdinand
+Kraftwerk | The Man-Machine
+Talking Heads | Remain in Light
+Sade | Diamond Life
+Stevie Wonder | Songs in the Key of Life
+Miles Davis | Kind of Blue
+Nina Simone | Pastel Blues
+Dua Lipa | Future Nostalgia
+The Weeknd | After Hours
+Harry Styles | Harry's House
+Olivia Rodrigo | SOUR
