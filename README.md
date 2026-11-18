@@ -1,4 +1,4 @@
-# Esmerilado
+# Esmerilao
 
 Juego web: aparece la portada de un disco muy difuminada y se va volviendo nítida poco a poco. Hay que acertar el disco entre 4 opciones; cuanto antes aciertes, más puntos.
 
