@@ -20,7 +20,7 @@ body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-syste
 header{width:100%;max-width:560px;padding:20px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 h1,.stats span{white-space:nowrap}
 @media (max-width:440px){.stats{gap:10px;font-size:.88rem}}
-h1{margin:0;font-family:"Rubik Microbe",system-ui,sans-serif;font-weight:400;font-size:clamp(1.9rem,7vw,2.5rem);letter-spacing:.1em;line-height:1.1;padding-left:.14em;
+h1,.screen h2.brand{margin:0;font-family:"Rubik Microbe",system-ui,sans-serif;font-weight:400;font-size:clamp(1.9rem,7vw,2.5rem);letter-spacing:.1em;line-height:1.1;padding-left:.14em;
   background:linear-gradient(170deg,#ffffff 0%,#e3ebf5 35%,#b9c7d9 60%,#eef3f9 80%,#a9b8cc 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 10px rgba(190,215,255,.4)) drop-shadow(0 2px 1px rgba(0,0,0,.6))}
 .stats{display:flex;gap:14px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.95rem}
@@ -31,6 +31,9 @@ main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
 body.wide main,body.wide header{max-width:680px}
 body.wide h1{font-size:clamp(2.4rem,10vw,4.2rem)}
 body.wide header{padding-top:32px;padding-bottom:16px}
+.screen h2.brand{font-size:clamp(2.6rem,11vw,4.4rem);margin:0 0 18px}
+body.on-start header{display:none}
+body.on-start main{padding-top:40px}
 body.wide .stats{display:none}
 body.wide .btn#startBtn,body.wide .btn#againBtn{font-size:1.1rem;padding:14px 40px}
 body.wide .modes{font-size:1.05rem}
@@ -112,7 +115,7 @@ footer{color:var(--muted);font-size:.8rem;padding:16px;text-align:center}
 footer a{color:var(--muted)}
 </style>
 </head>
-<body class="wide">
+<body class="wide on-start">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="frost" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
     <feTurbulence id="frostNoise" type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="1" result="n"/>
@@ -147,7 +150,7 @@ footer a{color:var(--muted)}
 
 <main>
   <section id="start" class="screen">
-    <h2>💿 ¿Qué disco es?</h2>
+    <h2 class="brand">ESMERILAO</h2>
     <p>La portada empieza irreconocible y se va aclarando poco a poco.</p>
     <p>Cuanto antes aciertes entre las 4 opciones, más puntos. Si fallas o se acaba el tiempo, cuenta como fallo.</p>
     <p>Teclas <b>1–4</b> para responder, <b>Enter</b> para seguir.</p>
@@ -416,6 +419,7 @@ async function loadLastfm(user, period, onExtra){
 function show(id){
   for (const s of ["start","game","end"]) $(s).classList.toggle("hidden", s !== id);
   document.body.classList.toggle("wide", id !== "game");
+  document.body.classList.toggle("on-start", id === "start");
   if (id === "game") stopBg(); else startBg();
 }
 
