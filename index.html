@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Carátulas Difusas</title>
 <meta name="description" content="Adivina el disco a partir de su portada difuminada.">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="5d84fd6c-0760-4a0c-a2d0-ffabb82179f5"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💿</text></svg>">
 <style>
 :root{
@@ -52,6 +53,15 @@ main{width:100%;max-width:560px;padding:0 16px 32px;flex:1}
 .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:16px 0}
 .summary img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:3px solid var(--bad)}
 .summary img.ok{border-color:var(--ok)}
+.modes{display:inline-flex;background:var(--bg);border-radius:999px;padding:4px;margin:16px 0 4px;gap:4px}
+.mode{background:none;border:0;color:var(--muted);font:inherit;padding:8px 16px;border-radius:999px;cursor:pointer}
+.mode.active{background:var(--panel2);color:var(--text);font-weight:600}
+.lf{display:grid;gap:10px;max-width:320px;margin:12px auto 0;text-align:left}
+.lf label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
+.lf input,.lf select{background:var(--bg);color:var(--text);border:2px solid var(--panel2);border-radius:10px;padding:10px 12px;font:inherit;width:100%}
+.lf input:focus,.lf select:focus{outline:none;border-color:var(--accent)}
+.err{color:var(--bad)!important;min-height:1.2em}
+.btn:disabled{opacity:.6;cursor:wait}
 footer{color:var(--muted);font-size:.8rem;padding:16px;text-align:center}
 footer a{color:var(--muted)}
 </style>
@@ -71,7 +81,25 @@ footer a{color:var(--muted)}
     <p>La portada empieza muy difuminada y se va aclarando poco a poco.</p>
     <p>Cuanto antes aciertes entre las 4 opciones, más puntos. Si fallas, 0.</p>
     <p>Teclas <b>1–4</b> para responder, <b>Enter</b> para seguir.</p>
+    <div class="modes">
+      <button class="mode active" data-mode="classic">Discos clásicos</button>
+      <button class="mode" data-mode="lastfm">Mi Last.fm</button>
+    </div>
+    <form id="lfForm" class="lf hidden" onsubmit="return false">
+      <label>Usuario de Last.fm<input id="lfUser" name="username" placeholder="tu_usuario" autocapitalize="off" spellcheck="false"></label>
+      <label>Periodo
+        <select id="lfPeriod">
+          <option value="7day">Última semana</option>
+          <option value="1month">Último mes</option>
+          <option value="3month" selected>Últimos 3 meses</option>
+          <option value="6month">Últimos 6 meses</option>
+          <option value="12month">Último año</option>
+          <option value="overall">Siempre</option>
+        </select>
+      </label>
+    </form>
     <p id="best"></p>
+    <p id="err" class="err"></p>
     <button class="btn" id="startBtn">Jugar</button>
   </section>
 
@@ -100,27 +128,93 @@ const ROUNDS = 10;          // rondas por partida
 const DURATION = 20000;     // ms hasta que la portada queda nítida
 const MAX_BLUR = 45;        // px de desenfoque inicial
 const MAX_POINTS = 1000, MIN_POINTS = 100;
+const LASTFM_API_KEY = "de2f8bfff3ddd42fb7fc1c47ccfa945a";
+const LF_PLACEHOLDER = "2a96cbd8b46e442fc41c2b86b821562f"; // imagen "sin portada" de Last.fm
 
 const $ = id => document.getElementById(id);
-let albums = [], deck = [], round = 0, score = 0, history = [];
+let albums = [], pool = [], deck = [], round = 0, score = 0, history = [];
+let mode = "classic", bestKey = "cd_best";
 let current = null, startTime = 0, raf = 0, answered = true;
 
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const store = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch {} } };
 
-function showBest(){ const b = +store.get("cd_best") || 0; $("best").textContent = b ? `Tu récord: ${b} puntos` : ""; }
+function showBest(){ const b = +store.get(bestKey) || 0; $("best").textContent = b ? `Tu récord: ${b} puntos` : ""; }
+
+function setMode(m){
+  mode = m;
+  document.querySelectorAll(".mode").forEach(b => b.classList.toggle("active", b.dataset.mode === m));
+  $("lfForm").classList.toggle("hidden", m !== "lastfm");
+  $("err").textContent = "";
+  if (m === "lastfm") $("lfUser").focus();
+}
 
 async function init(){
   try { albums = await (await fetch("albums.json")).json(); }
   catch { $("startBtn").textContent = "Error cargando albums.json"; $("startBtn").disabled = true; return; }
   $("total").textContent = ROUNDS;
+  // ?user=xxx&period=3month abre directamente el modo Last.fm
+  const q = new URLSearchParams(location.search);
+  const u = q.get("user") || store.get("cd_lfuser");
+  if (u) $("lfUser").value = u;
+  if (q.get("period") && $("lfPeriod").querySelector(`option[value="${CSS.escape(q.get("period"))}"]`)) $("lfPeriod").value = q.get("period");
+  if (q.get("user")) setMode("lastfm");
   showBest();
 }
 
 function show(id){ for (const s of ["start","game","end"]) $(s).classList.toggle("hidden", s !== id); }
 
+// Portada en iTunes cuando Last.fm no tiene
+async function itunesCover(artist, album){
+  try {
+    const q = new URLSearchParams({ term: `${artist} ${album}`, entity: "album", limit: 5 });
+    const r = await (await fetch(`https://itunes.apple.com/search?${q}`)).json();
+    const a = artist.toLowerCase();
+    const hit = r.results.find(x => x.artistName?.toLowerCase().includes(a)) || null;
+    return hit?.artworkUrl100?.replace("100x100bb", "600x600bb") || null;
+  } catch { return null; }
+}
+
+async function loadLastfm(user, period){
+  const q = new URLSearchParams({ method: "user.gettopalbums", user, period, limit: 60, api_key: LASTFM_API_KEY, format: "json" });
+  const r = await (await fetch(`https://ws.audioscrobbler.com/2.0/?${q}`)).json();
+  if (r.error) throw new Error(r.error === 6 ? `No existe el usuario «${user}» en Last.fm` : r.message);
+  const list = (r.topalbums?.album || []).map(a => {
+    const img = (a.image || []).find(i => i.size === "extralarge")?.["#text"] || "";
+    const ok = img && !img.includes(LF_PLACEHOLDER);
+    return { artist: a.artist.name, album: a.name, cover: ok ? img.replace(/\/\d+x\d+\//, "/600x600/") : null };
+  });
+  // completa hasta 15 portadas que falten con iTunes, de 4 en 4
+  const missing = list.filter(a => !a.cover).slice(0, 15);
+  for (let i = 0; i < missing.length; i += 4)
+    await Promise.all(missing.slice(i, i + 4).map(async a => { a.cover = await itunesCover(a.artist, a.album); }));
+  // sin duplicados de nombre (opciones indistinguibles)
+  const seen = new Set();
+  return list.filter(a => a.cover && !seen.has((a.artist + "|" + a.album).toLowerCase()) && seen.add((a.artist + "|" + a.album).toLowerCase()));
+}
+
+async function startClicked(){
+  $("err").textContent = "";
+  if (mode === "classic") { pool = albums; bestKey = "cd_best"; return startGame(); }
+  const user = $("lfUser").value.trim(), period = $("lfPeriod").value;
+  if (!user) { $("err").textContent = "Escribe un usuario de Last.fm"; $("lfUser").focus(); return; }
+  const btn = $("startBtn"); btn.disabled = true; btn.textContent = "Cargando discos…";
+  try {
+    const list = await loadLastfm(user, period);
+    if (list.length < 4) throw new Error("Ese usuario no tiene suficientes discos escuchados en ese periodo (mínimo 4).");
+    pool = list;
+    bestKey = `cd_best_lf_${user.toLowerCase()}_${period}`;
+    store.set("cd_lfuser", user);
+    window.history.replaceState(null, "", `?user=${encodeURIComponent(user)}&period=${period}`);
+    startGame();
+  } catch (e) {
+    $("err").textContent = e.message || "No se pudo conectar con Last.fm";
+  } finally { btn.disabled = false; btn.textContent = "Jugar"; }
+}
+
 function startGame(){
-  deck = shuffle([...albums]).slice(0, Math.min(ROUNDS, albums.length));
+  deck = shuffle([...pool]).slice(0, Math.min(ROUNDS, pool.length));
+  $("total").textContent = deck.length;
   round = 0; score = 0; history = [];
   $("score").textContent = 0;
   show("game");
@@ -150,7 +244,7 @@ async function nextRound(){
   $("potential").textContent = MAX_POINTS;
 
   // 3 distractores, evitando repetir el mismo disco
-  const others = shuffle(albums.filter(a => a !== current)).slice(0, 3);
+  const others = shuffle(pool.filter(a => a !== current)).slice(0, 3);
   const opts = shuffle([current, ...others]);
   const box = $("options"); box.innerHTML = "";
   opts.forEach((a, i) => {
@@ -219,9 +313,9 @@ function endGame(){
   show("end");
   $("final").textContent = score;
   const hits = history.filter(h => h.ok).length;
-  const best = +store.get("cd_best") || 0;
+  const best = +store.get(bestKey) || 0;
   let msg = `${hits} de ${history.length} aciertos.`;
-  if (score > best) { store.set("cd_best", score); msg += " ¡Nuevo récord!"; }
+  if (score > best) { store.set(bestKey, score); msg += " ¡Nuevo récord!"; }
   $("endMsg").textContent = msg;
   const s = $("summary"); s.innerHTML = "";
   history.forEach(h => {
@@ -233,7 +327,8 @@ function endGame(){
   showBest();
 }
 
-$("startBtn").onclick = startGame;
+$("startBtn").onclick = startClicked;
+document.querySelectorAll(".mode").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $("againBtn").onclick = startGame;
 $("nextBtn").onclick = nextRound;
 document.addEventListener("keydown", e => {
